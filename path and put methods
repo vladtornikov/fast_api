@@ -1,0 +1,28 @@
+@app.put("/hotels/{hotel_id}")
+def change_whole_hotel(hotel_id:int, title:str, name:str):
+    global hotels
+    return update_hotels(hotels, hotel_id, title, name)
+
+@app.patch("/hotels/{hotel_id}")
+def change_hotel(
+        hotel_id:int,
+        title:str | None = Query(default=None, description='title'),
+        name:str | None = Query(default=None, description='name')
+):
+    global hotels
+    return update_hotels(hotels, hotel_id, title, name)
+
+def update_hotels(
+        hotels: list,
+        hotel_id: int,
+        title: str | None,
+        name: str | None
+):
+    for hotel in hotels:
+        if hotel['id'] == hotel_id:
+            if title:
+                hotel['title'] = title
+            if name:
+                hotel['name'] = name
+            return {"status": "ok", "updated_hotels": hotels}
+    return {"error": f"hotel with ID {hotel_id} is not found"}
