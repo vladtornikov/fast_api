@@ -1,0 +1,37 @@
+from fastapi import APIRouter, Depends
+from schemas.hotels import Hotel, HotelPatch, HotelGet
+
+@router.get(
+    '',
+    summary='Тут мы получаем данные об отеле',
+    description='Если ввести id, name или (и) title, то получим данные о конкретном отеле'
+)
+def get_hotels(data_hotels: HotelGet = Depends(HotelGet)):
+    hotels_ = []
+    for hotel in hotels:
+        if data_hotels.id and hotel["id"] != data_hotels.id:
+            continue
+        if  data_hotels.title and hotel["title"] !=  data_hotels.title:
+            continue
+        if  data_hotels.name and hotel["name"] !=  data_hotels.name:
+            continue
+        hotels_.append(hotel)
+
+    end_index =  data_hotels.page *  data_hotels.per_page
+    start_index = end_index -  data_hotels.per_page
+    paginated_hotels = hotels_[start_index:end_index]
+
+    if paginated_hotels:
+        return paginated_hotels
+    else:
+        # Если на текущей странице нет отелей, можно вернуть пустой список или какое-то сообщение
+        return {"status": "Отелей на этой странице не найдено"}
+
+
+from pydantic import BaseModel, Field
+class HotelGet(BaseModel):
+    id: int | None = None
+    title: str | None = None
+    name: str | None = None
+    page: int = 1
+    per_page: int = 3
