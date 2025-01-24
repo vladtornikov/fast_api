@@ -1,0 +1,25 @@
+@router.get(
+    '',
+    summary='Тут мы получаем данные об отеле',
+    description='Если ввести id, name или (и) title, то получим данные о конкретном отеле'
+)
+async def get_hotels(
+        pagination: PaginationDep,
+        title: str | None = Query(None, description="Название отеля"),
+        location: str | None = Query(None, description="Адрес отеля")
+):
+    async with async_session_maker() as session:
+        query = select(HotelsORM)
+        if title:
+            query = query.filter(HotelsORM.title.like(f'%{title}%'))
+        if location:
+            query = query.filter(HotelsORM.location.like(f'%{location}%'))
+        query = (
+            query
+            .limit(pagination.per_page)
+            .offset(pagination.per_page * (pagination.page - 1))
+        )
+        result = await session.execute(query)
+        hotels = result.scalars().all()
+        print(type(hotels), hotels)
+        return hotels
