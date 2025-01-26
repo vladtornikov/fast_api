@@ -1,15 +1,3 @@
-    async def add(
-            self,
-            data):
-        add_hotels_smth = insert(self.model).values(**data.model_dump()).returning(
-            self.model.title,
-            self.model.location)
-        print(add_hotels_smth.compile(engine, compile_kwargs={'literal_binds': True}))
-        result = await self.session.execute(add_hotels_smth)
-        r = tuple(result.fetchone())
-        return r
-
-
 @router.post(
     '',
     summary='Тут мы можем добавить данные о новом отеле'
@@ -35,3 +23,12 @@ async def create_hotel(hotel_data: Hotel = Body(openapi_examples={
         hotel = await HotelRepository(session).add(hotel_data)
         await session.commit()
     return {"status": "OK", "data": hotel}
+
+
+
+
+    async def add(self, data: BaseModel):
+        add_data_smth = insert(self.model).values(**data.model_dump()).returning(self.model)
+        print(add_data_smth.compile(compile_kwargs={'literal_binds': True}))
+        result = await self.session.execute(add_data_smth)
+        return result.scalars().one()
