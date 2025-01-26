@@ -1,0 +1,37 @@
+    async def add(
+            self,
+            data):
+        add_hotels_smth = insert(self.model).values(**data.model_dump()).returning(
+            self.model.title,
+            self.model.location)
+        print(add_hotels_smth.compile(engine, compile_kwargs={'literal_binds': True}))
+        result = await self.session.execute(add_hotels_smth)
+        r = tuple(result.fetchone())
+        return r
+
+
+@router.post(
+    '',
+    summary='Тут мы можем добавить данные о новом отеле'
+)
+async def create_hotel(hotel_data: Hotel = Body(openapi_examples={
+    "1": {
+        "summary": "Бангкок",
+        "value": {
+            "title": "Отель Амара Бангкок",
+            "location": "Бангкок, Суравонг, 10500",
+        }
+    },
+    "2": {
+        "summary": "Москва",
+        "value": {
+            "title": "Рэдиссон Славянская",
+            "location": "Площадь трех вокзалов, 3",
+        }
+    }
+})
+):
+    async with async_session_maker() as session:
+        hotel = await HotelRepository(session).add(hotel_data)
+        await session.commit()
+    return {"status": "OK", "data": hotel}
