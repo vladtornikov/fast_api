@@ -1,0 +1,43 @@
+@router.delete(
+    "/{hotel_id}",
+    summary='Тут мы удаляем отель'
+)
+async def delete_hotel(hotel_id: int):
+    async with async_session_maker() as session:
+        await HotelRepository(session).delete(id=hotel_id)
+        await session.commit()
+    return {"status": "OK"}
+
+@router.put(
+    "/{hotel_id}",
+    summary='Обновление данных об отеле',
+    description='Тут мы полностью обновляем данные об отеле: нужно обязательно передать и name, и title'
+)
+async def change_whole_hotel(hotel_data: Hotel, hotel_id: int):
+    async with async_session_maker() as session:
+        await HotelRepository(session).edit(hotel_data, id=hotel_id)
+        await session.commit()
+    return {"status": "OK"}
+
+
+async def edit(self, data: BaseModel, **filter_by) -> None:
+    await self.check_data(filter_by)
+    stmt = update(self.model).where(self.model.id == filter_by['id']).values(**data.model_dump())
+    print(stmt.compile(compile_kwargs={"literal_binds": True}))
+    await self.session.execute(stmt)
+
+async def delete(self, **filter_by) -> None:
+    await self.check_data(filter_by)
+    stmt = delete(self.model).where(self.model.id == filter_by['id'])
+    print(stmt.compile(compile_kwargs={"literal_binds": True}))
+    await self.session.execute(stmt)
+
+async def check_data(self, filter_by: dict):
+    stmt = select(self.model).filter(self.model.id == filter_by["id"])
+    obj = await self.session.execute(stmt)
+    try:
+        res = obj.one_or_none()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=400, detail="Multiple object")
+    if not res:
+        raise HTTPException(status_code=404, detail="Object not found")
