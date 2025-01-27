@@ -22,18 +22,18 @@ async def change_whole_hotel(hotel_data: Hotel, hotel_id: int):
 
 async def edit(self, data: BaseModel, **filter_by) -> None:
     await self.check_data(filter_by)
-    stmt = update(self.model).where(self.model.id == filter_by['id']).values(**data.model_dump())
+    stmt = update(self.model).filter_by(**filter_by).values(**data.model_dump())
     print(stmt.compile(compile_kwargs={"literal_binds": True}))
     await self.session.execute(stmt)
 
 async def delete(self, **filter_by) -> None:
     await self.check_data(filter_by)
-    stmt = delete(self.model).where(self.model.id == filter_by['id'])
+    stmt = delete(self.model).filter_by(**filter_by)
     print(stmt.compile(compile_kwargs={"literal_binds": True}))
     await self.session.execute(stmt)
 
 async def check_data(self, filter_by: dict):
-    stmt = select(self.model).filter(self.model.id == filter_by["id"])
+    stmt = select(self.model).filter_by(**filter_by)
     obj = await self.session.execute(stmt)
     try:
         res = obj.one_or_none()
