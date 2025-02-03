@@ -1,0 +1,9 @@
+@router.post('/only_auth')
+async def only_auth(
+        request: Request
+):
+
+    access_token = request.cookies or None
+    if access_token:
+        return access_token
+    return 'Токен не найден'
