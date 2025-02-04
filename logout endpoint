@@ -1,0 +1,9 @@
+@router.get(
+    '/logout',
+    summary='Удаляем JWT-токен после того, как пользователь разлогинился'
+)
+async def delete_jwt_token(response: Response
+
+):
+    response.delete_cookie(key='access_token')
+    return {'status': 'OK'}
