@@ -1,0 +1,126 @@
+from fastapi import APIRouter, Body
+
+
+from src.database import async_session_maker
+from src.repositories.rooms import RoomsRepository
+from src.schemas_API.rooms import RoomsInfo, RoomsPatch, RoomsPut
+
+router = APIRouter(prefix='/rooms', tags=['Номера в отелях'])
+
+@router.get(
+    '/hotel/{hotel_id}',
+    summary='Получение комнат в определенном отеле'
+)
+async def get_rooms_in_hotel(hotel_id: int):
+    async with async_session_maker() as session:
+        return await RoomsRepository(session).get_all_rooms_in_hotel(hotel_id=hotel_id)
+
+@router.get(
+    '/room/{room_id}',
+    summary='Получение данных определенной комнаты'
+)
+async def get_data_about_room(room_id: int):
+    async with async_session_maker() as session:
+        return await RoomsRepository(session).get_one_or_none(id=room_id)
+
+@router.delete(
+    '/{room_id}',
+    summary='Удаляем комнату из базы данных'
+)
+async def delete_room(room_id: int):
+    async with async_session_maker() as session:
+        await RoomsRepository(session).delete(id=room_id)
+        await session.commit()
+    return {'status': 'OK'}
+
+
+@router.post(
+    '',
+    summary='Добавляем новые комнаты в определенный отель',
+)
+async def add_new_room(room: RoomsInfo = Body(openapi_examples={
+    '1': {
+        'summary': 'Рэдиссон Славянская',
+        'value': {
+            'hotel_id': 11,
+            'title': 'Люкс',
+            'description': 'Большой номер, две кровати',
+            'price': 10000,
+            'quantity': 2,
+        }
+
+    },
+    '2': {
+        'summary': 'Railay Beach Resort',
+        'value': {
+            'hotel_id': 20,
+            'title': 'Двойной номер',
+            'description': 'хорошая комната, добротная',
+            'price': 5000,
+            'quantity': 2,
+        }
+    }
+})):
+    async with async_session_maker() as session:
+        data = await RoomsRepository(session).add(room)
+        await session.commit()
+    return {'status': 'OK', 'data': data}
+
+@router.put(
+    '/{room_id}',
+    summary='Полное обновление данных о комнате',
+    description='Нужно обязательно ввести все параметры'
+)
+async def update_room(room_id: int, room_chng: RoomsPut = Body(openapi_examples={
+    '1': {'summary': 'Первый вариант',
+          'value': {
+            'hotel_id': 9,
+            'title': 'Двойной номер',
+            'description': '',
+            'price': 5000,
+            'quantity': 2
+          }
+          },
+    '2': {'summary': 'Второй вариант',
+          'value': {
+            'hotel_id': 14,
+            'title': 'Двойной номер',
+            'description': 'большой отель',
+            'price': 5000,
+            'quantity': 2
+          }
+    }
+})
+):
+    async with async_session_maker() as session:
+        await RoomsRepository(session).edit(room_chng, id=room_id)
+        await session.commit()
+    return {'status': 'OK'}
+
+@router.patch(
+    '/{room_id}',
+    summary='Частичное обновление данных о комнате',
+    description='Необязательно передавать все параметры'
+)
+async def partially_update_room(
+        room_id: int,
+        room_chng: RoomsPatch = Body(openapi_examples={
+            '1': {'summary': 'Первый вариант',
+                  'value': {
+                    'hotel_id': 20,
+                    'quantity': 25,
+                  }
+                },
+            '2': {'summary': 'Второй вариант',
+                  'value': {
+                    'hotel_id': 16,
+                    'title': 'Shangri-La',
+                    'price': 6000
+                  }
+                }
+        })
+):
+    async with async_session_maker() as session:
+        await RoomsRepository(session).edit(room_chng, exclude_unset=True, id=room_id)
+        await session.commit()
+    return {'status': 'OK'}
