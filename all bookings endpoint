@@ -1,0 +1,17 @@
+@router.get(
+    '',
+        summary='Получаем все бронирования'
+)
+
+async def get_all(db: DBDep):
+    res = await db.bookings.get_all()
+    return {'status': 'OK', 'data': res}
+
+@router.get(
+    '/me',
+    summary='Получаем бронирование аутентифицированного пользователя'
+)
+
+async def get_a_booking(db: DBDep, user_id: UserIdDep):
+    res = await db.bookings.get_filtered(user_id=user_id)
+    return {'status': 'OK', 'data': res}
