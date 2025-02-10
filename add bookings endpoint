@@ -1,0 +1,60 @@
+from fastapi import APIRouter
+
+
+from src.api.dependencies import DBDep, UserIdDep
+from src.schemas_API.bookings import BookingAdd, BookingRequest
+
+router = APIRouter(prefix='/bookings', tags=['Бронирования'])
+
+@router.post(
+    '',
+    summary='Добавляем новое бронирование'
+)
+async def booking(
+        data: BookingRequest,
+        db: DBDep,
+        user_id: UserIdDep
+):
+    price = await db.bookings.get_price(id=data.room_id)
+    price = dict(price)['price']
+    new_schema = BookingAdd(user_id=user_id, price=price, **data.model_dump())
+    res = await db.bookings.add(new_schema)
+    return {'status': 'OK', 'data': res}
+
+
+from datetime import date
+
+from pydantic import BaseModel
+
+
+class BookingRequest(BaseModel):
+    room_id: int
+    date_from: date
+    date_to: date
+
+class BookingAdd(BookingRequest):
+    user_id: int
+    price: int
+
+class Price(BaseModel):
+    price: int
+
+
+from sqlalchemy import select
+
+from src.repositories.base import BaseRepository
+from src.models_database.bookings import BookingsORM
+from src.models_database.rooms import RoomsORM
+from src.schemas_API.bookings import Price, BookingAdd
+
+class BookingsRepository(BaseRepository):
+    model = BookingsORM
+    pydantic_schema = BookingAdd
+
+    async def get_price(self, **filter_by):
+        query = select(RoomsORM).filter_by(**filter_by)
+        result = await self.session.execute(query)
+        model = result.scalars().one_or_none()
+        if not model:
+            return None
+        return Price.model_validate(model, from_attributes=True)
