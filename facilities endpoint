@@ -1,0 +1,20 @@
+from fastapi import APIRouter
+
+from src.schemas_API.facilities import FacilityRequest
+from src.api.dependencies import DBDep
+
+router = APIRouter(prefix='/facilities', tags=['Удобства в номерах'])
+
+@router.get('', summary='Получаем все имеюищиеся удобства')
+async def get_facilities(
+        db: DBDep
+):
+    return await db.facilities.get_all()
+
+@router.post('', summary='Добавляем новое удобство')
+async def add_facility(
+        db: DBDep,
+        facility_data: FacilityRequest
+):
+    result = await db.facilities.add(facility_data)
+    return {"status": "OK", "data": result}
