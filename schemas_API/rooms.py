@@ -1,38 +1,43 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+
+from src.schemas_API.facilities import FacilityReply
 
 
-class RoomsAddRequest(BaseModel):
+class RoomAddRequest(BaseModel):
     title: str
     description: str | None = None
     price: int
     quantity: int
-    facilities_ids: list[int] | None = None
+    facilities_ids: list[int] = []
 
-class RoomsAdd(BaseModel):
+
+class RoomAdd(BaseModel):
     hotel_id: int
     title: str
-    description: str | None
-    price: int
-    quantity: int
-
-class Room(RoomsAdd):
-    id: int
-
-class RoomsEdit(BaseModel):
-    title: str
     description: str | None = None
     price: int
     quantity: int
 
-class RoomsPatch(BaseModel):
-    title: str | None = Field(None)
-    description: str | None = Field(None)
-    price: int | None = Field(None)
-    quantity: int | None = Field(None)
-    facilities_ids: list[int] | None = Field(None)
 
-class RoomsPatchNoFacilities(BaseModel):
-    title: str | None = Field(None)
-    description: str | None = Field(None)
-    price: int | None = Field(None)
-    quantity: int | None = Field(None)
+class Room(RoomAdd):
+    id: int
+
+
+class RoomWithRels(Room):
+    facilities: list[FacilityReply]
+
+
+class RoomPatchRequest(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    price: int | None = None
+    quantity: int | None = None
+    facilities_ids: list[int] = []
+
+
+class RoomPatch(BaseModel):
+    hotel_id: int | None = None
+    title: str | None = None
+    description: str | None = None
+    price: int | None = None
+    quantity: int | None = None
