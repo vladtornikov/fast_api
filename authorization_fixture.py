@@ -10,4 +10,5 @@ async def authenticated_ac(ac: httpx.AsyncClient, register_user):
     assert response.status_code == 200
     token = response.cookies.get('access_token')
     assert token
-    return {'Authorization': f'Bearer {token}'}
+    ac.headers.update({'Authorization': f'Bearer {token}'})
+    return ac
