@@ -1,14 +1,26 @@
-async def test_get_facilities(ac):
-    response = await ac.get(
-        '/facilities'
-    )
-    print(f'{response.json()=}')
-    assert response.status_code == 200
+from httpx import AsyncClient
+from fastapi import HTTPException
 
-async def test_add_facilites(ac):
-    response = await ac.post(
-        '/facilities',
-        json={'title': 'унитаз с подогревом'}
+from src.utils.database_cntxt_mngr import DBManager
+
+
+
+async def test_booking_add(db: DBManager, authenticated_ac: AsyncClient) -> None:
+    room_id = (await db.rooms.get_all())[0].id
+    response = await authenticated_ac.post(
+        '/bookings',
+        json={
+            'room_id': room_id,
+            'date_from': '2024-08-01',
+            'date_to': '2024-08-10'
+        }
     )
-    print(f'{response.json()=}')
     assert response.status_code == 200
+    res = response.json()
+    assert isinstance(res, dict)
+    assert res['status'] == 'OK'
+    assert 'data' in res
+
+
+
+

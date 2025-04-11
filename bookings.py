@@ -1,20 +1,36 @@
 from datetime import date
 
-from src.database import BaseORM
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey, DateTime, Integer
+from pydantic import BaseModel
+from sqlalchemy import select
+from fastapi import HTTPException
+
+from src.repositories.base import BaseRepository
+from src.models_database.bookings import BookingsORM
+from src.repositories.mappers.mappers import BookingDataMapper
+from src.repositories.utils import rooms_ids_for_booking
 
 
-class BookingsORM(BaseORM):
-    __tablename__ = 'bookings'
+class BookingsRepository(BaseRepository):
+    model = BookingsORM
+    mapper = BookingDataMapper
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
-    room_id: Mapped[int] = mapped_column(ForeignKey('rooms.id'))
-    date_from: Mapped[date] = mapped_column(DateTime)
-    date_to: Mapped[date] =mapped_column(DateTime)
-    price: Mapped[int] =mapped_column(Integer)
+    async def get_bookings_with_today_checkin(self):
+        query = (
+            select(self.model)
+            .filter(self.model.date_from == date.today())
+        )
+        res = await self.session.execute(query)
+        return [self.mapper.map_to_domain_entity(booking) for booking in res.scalars().all()]
 
-    @property
-    def total_cost(self) -> int:
-        return self.price * (self.date_to - self.date_from).days
+    async def add_booking(self, data: BaseModel) -> BaseModel:
+        available_rooms = rooms_ids_for_booking(date_from=data.date_from, date_to=data.date_to)
+        available_rooms = await self.session.execute(available_rooms)
+        available_rooms = available_rooms.scalars().all()
+        res = list(filter(lambda x: data.room_id == x, available_rooms))
+        if res:
+            new_booking = await self.add(data)
+            return new_booking
+        raise HTTPException(status_code=401, detail='Данная комната уже забронирована')
+
+
+
