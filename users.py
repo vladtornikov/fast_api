@@ -2,7 +2,7 @@ from pydantic import EmailStr, BaseModel
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from src.exceptions import EmailAlreadyExistsException
+from src.exceptions import EmailAlreadyExistsException, ObjectNotFoundException
 from src.repositories.base import BaseRepository
 from src.models_database.users import UsersORM
 from src.repositories.mappers.mappers import UserDataMapper
@@ -22,7 +22,7 @@ class UsersRepository(BaseRepository):
     async def register_user(self, data: UserAdd) -> BaseModel:
         try:
             return await self.add(data)
-        except IntegrityError:
+        except ObjectNotFoundException:
             raise EmailAlreadyExistsException
 
 
